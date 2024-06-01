@@ -71,6 +71,11 @@ def lambda_handler(event, context):
         # 受け取ったテキスト
         text = line_event.message.text
 
+        # メッセージに入ってて欲しい単語
+        validate_words = ["名前", "趣味", "一言", "テイスト"]
+        if not all(word in text for word in validate_words):
+            line_bot_api.reply_message(line_event.reply_token, TextSendMessage(text="フォーマットにしたがって入力してみてね！"))
+
         # chatgptにリクエストする
         request_data = {
             "model": "gpt-3.5-turbo",
