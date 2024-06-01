@@ -1,6 +1,8 @@
 import os
 import sys
 import logging
+import requests
+import json
 
 from linebot import (LineBotApi, WebhookHandler)
 from linebot.models import (MessageEvent, TextMessage, TextSendMessage)
@@ -25,6 +27,13 @@ if channel_access_token is None:
 #apiとhandlerの生成（チャンネルアクセストークンとシークレットを渡す）
 line_bot_api = LineBotApi(channel_access_token)
 handler = WebhookHandler(channel_secret)
+
+# chatgptとの接続準備
+chatgpr_url = "https://api.openai.com/v1/chat/completions"
+request_headers = {
+    "Content-Type": "application/json",
+    "Authorization": f"Bearer {os.environ.get('OPENAI_API_KEY')}"
+}
 
 #Lambdaのメインの動作
 def lambda_handler(event, context):
@@ -59,9 +68,31 @@ def lambda_handler(event, context):
     #メッセージを受け取る・受け取ったら受け取ったテキストを返信する
     @handler.add(MessageEvent, message=TextMessage)
     def message(line_event):
+        # 受け取ったテキスト
         text = line_event.message.text
-#         line_bot_api.reply_message(line_event.reply_token, TextSendMessage(text=f"{text}\n知らんけど。"))
-        line_bot_api.reply_message(line_event.reply_token, TextSendMessage(text=f"{event}"))
+
+        # chatgptにリクエストする
+        request_data = {
+            "model": "gpt-3.5-turbo",
+            "messages": [
+                {"role": "system", "content": "あなたは親切で丁寧な自己紹介生成マシンです。ユーザーから「名前」、「趣味」、「一言」と、自己紹介の希望テイストが送られて来るので、なるべく自然な言葉で100文字程度で自己紹介文を生成してください。"},
+                {"role": "user", "content": text }
+            ]
+        }
+
+        response = requests.post(url, headers=headers, data=json.dumps(data))
+
+        if response.status_code == 200:
+            result = response.json()
+            answer = result["choices"][0]["message"]["content"]
+
+            # videoを返す
+            # video = create_video.create(text)
+
+            # 今はテキストを返す
+            line_bot_api.reply_message(line_event.reply_token, TextSendMessage(text=answer))
+        else:
+            line_bot_api.reply_message(f"Error: {response.status_code}, {response.text}")
 
     #例外処理としての動作
     try:
