@@ -29,7 +29,7 @@ line_bot_api = LineBotApi(channel_access_token)
 handler = WebhookHandler(channel_secret)
 
 # chatgptとの接続準備
-chatgpr_url = "https://api.openai.com/v1/chat/completions"
+chatgpt_url = "https://api.openai.com/v1/chat/completions"
 request_headers = {
     "Content-Type": "application/json",
     "Authorization": f"Bearer {os.environ.get('OPENAI_API_KEY')}"
@@ -80,7 +80,7 @@ def lambda_handler(event, context):
             ]
         }
 
-        response = requests.post(url, headers=headers, data=json.dumps(request_data))
+        response = requests.post(chatgpt_url, headers=request_headers, data=json.dumps(request_data))
 
         if response.status_code == 200:
             result = response.json()
