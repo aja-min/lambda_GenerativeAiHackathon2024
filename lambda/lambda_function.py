@@ -9,7 +9,7 @@ from linebot.exceptions import (LineBotApiError, InvalidSignatureError)
 logger = logging.getLogger()
 logger.setLevel(logging.ERROR)
 
-#LINEBOTと接続するための記述
+#LINEBOTと接続するための記述aa
 #環境変数からLINEBotのチャンネルアクセストークンとシークレットを読み込む
 channel_secret = os.getenv('LINE_CHANNEL_SECRET', None)
 channel_access_token = os.getenv('LINE_CHANNEL_ACCESS_TOKEN', None)
