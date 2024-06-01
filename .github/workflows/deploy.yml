@@ -32,5 +32,5 @@ jobs:
       - name: lambda update
         run: |
           pip3 install awscli
-          cd lambda && zip -r package.zip ./*
+          cd lambda && pip3 install -r requirements.txt && zip -r package.zip ./*
           aws lambda update-function-code --function-name self-introduce-line-bot --zip-file fileb://package.zip --publish
