@@ -40,7 +40,7 @@ jobs:
   slack_notification:
     if: ${{ always() }}
     needs: deploy
-    uses: ./.github/workflows/slack.yaml
+    uses: ./.github/workflows/slack.yml
     with:
       lambda-function-name: self-introduce-line-bot
       commit-id: ${{ github.sha }}
