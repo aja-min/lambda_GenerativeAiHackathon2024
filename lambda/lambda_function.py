@@ -148,18 +148,8 @@ def lambda_handler(event, context):
             image_url = generate_image(image_prompt)
 
             if image_url:
-                # 画像をダウンロード
-                image = download_image(image_url)
-                if image:
-                    # 画像を一時ファイルとして保存
-                    image_path = "/tmp/generated_image.png"
-                    image.save(image_path)
-                    line_bot_api.reply_message(line_event.reply_token, ImageSendMessage(
-                        original_content_url=image_url,
-                        preview_image_url=image_url
-                    ))
-                else:
-                    line_bot_api.reply_message(line_event.reply_token, TextSendMessage(text="画像のダウンロードに失敗しました。"))
+                # 画像生成に成功した場合
+                line_bot_api.reply_message(line_event.reply_token, TextSendMessage(text=f"画像生成に成功しました: {image_url}"))
             else:
                 # 画像生成に失敗した場合
                 line_bot_api.reply_message(line_event.reply_token, TextSendMessage(text="画像生成に失敗しました。"))
