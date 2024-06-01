@@ -9,7 +9,7 @@ from linebot.exceptions import (LineBotApiError, InvalidSignatureError)
 logger = logging.getLogger()
 logger.setLevel(logging.ERROR)
 
-#LINEBOTと接続するための記述aa
+#LINEBOTと接続するための記述
 #環境変数からLINEBotのチャンネルアクセストークンとシークレットを読み込む
 channel_secret = os.getenv('LINE_CHANNEL_SECRET', None)
 channel_access_token = os.getenv('LINE_CHANNEL_ACCESS_TOKEN', None)
@@ -40,6 +40,7 @@ def lambda_handler(event, context):
             "headers": {},
             "body": "Missing x-line-signature header"
         }
+
     body = event["body"]
     # リターン値の設定
     ok_json = {
@@ -59,7 +60,7 @@ def lambda_handler(event, context):
     @handler.add(MessageEvent, message=TextMessage)
     def message(line_event):
         text = line_event.message.text
-        line_bot_api.reply_message(line_event.reply_token, TextSendMessage(text=text))
+        line_bot_api.reply_message(line_event.reply_token, TextSendMessage(text=f"{text}\n知らんけど。"))
 
     #例外処理としての動作
     try:
