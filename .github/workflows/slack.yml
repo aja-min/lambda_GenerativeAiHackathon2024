@@ -1,0 +1,42 @@
+name: Slack Notification
+
+on:
+  workflow_call:
+    inputs:
+      lambda-function-name:
+        required: true
+        type: string
+      commit-id:
+        required: true
+        type: string
+      status:
+        required: true
+        type: string
+    secrets:
+      SLACK_WEBHOOK_URL:
+        required: true
+
+jobs:
+  slack_notification:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Send Github Action trigger data to Slack
+        id: slack
+        uses: slackapi/slack-github-action@v1.25.0
+        with:
+          payload: |
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*デプロイ結果: ${{ inputs.status }}*\nLambda関数名: `${{ inputs.lambda-function-name }}`\nコミットID: `${{ inputs.commit-id }}`"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
