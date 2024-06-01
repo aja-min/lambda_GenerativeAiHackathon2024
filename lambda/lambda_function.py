@@ -45,7 +45,7 @@ def generate_image(prompt):
         "Authorization": f"Bearer {os.environ.get('OPENAI_API_KEY')}"
     }
     data = {
-        "model": "image-alpha-001",
+        "model": "dall-e-3",
         "prompt": prompt,
         "num_images": 1,
         "size": "1024x1024"
@@ -127,29 +127,30 @@ def lambda_handler(event, context):
 
             # OpenAIで画像生成
             image_prompt = (
-                "Create an image based on the following instructions: "
-                "1. The background should be plain white. "
-                "2. There should be only one character. "
-                "3. The character should be standing upright in the center of the image. "
-                "4. The character should be looking directly at the camera. "
-                "5. The character should not be holding anything in their hands. "
-                "6. The character should have their mouth closed. "
-                "7. The character's mouth should not be covered. "
-                "8. The image should be square in shape. "
-                "Character details: "
-                "1. The character should be a female student attending a Japanese school. "
-                "2. The character should have a keen interest in technology. "
-                "3. The character should have a bright expression with a smile. "
-                "4. The character should have sparkling eyes. "
-                "5. The character should exude positive energy. "
-                "Please ensure that the image is recognizable as a human face."
+                "Create a high-quality, detailed, realistic bust-up portrait of a Japanese school girl. "
+                "The background should be plain white. "
+                "The girl should be centered in the image and clearly visible. "
+                "She should have a friendly, smiling expression and sparkling eyes. "
+                "Ensure the image focuses on her face and upper body, making it easily recognizable. "
+                "The image should be square in shape. "
+                "No other objects or people should be present in the image. "
             )
 
             image_url = generate_image(image_prompt)
 
             if image_url:
-                # 画像生成に成功した場合
-                line_bot_api.reply_message(line_event.reply_token, TextSendMessage(text=f"画像生成に成功しました: {image_url}"))
+                # 画像をダウンロード
+                image = download_image(image_url)
+                if image:
+                    # 画像を一時ファイルとして保存
+                    image_path = "/tmp/generated_image.png"
+                    image.save(image_path)
+                    line_bot_api.reply_message(line_event.reply_token, ImageSendMessage(
+                        original_content_url=image_url,
+                        preview_image_url=image_url
+                    ))
+                else:
+                    line_bot_api.reply_message(line_event.reply_token, TextSendMessage(text="画像のダウンロードに失敗しました。"))
             else:
                 # 画像生成に失敗した場合
                 line_bot_api.reply_message(line_event.reply_token, TextSendMessage(text="画像生成に失敗しました。"))
