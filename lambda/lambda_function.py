@@ -60,7 +60,8 @@ def lambda_handler(event, context):
     @handler.add(MessageEvent, message=TextMessage)
     def message(line_event):
         text = line_event.message.text
-        line_bot_api.reply_message(line_event.reply_token, TextSendMessage(text=f"{text}\n知らんけど。"))
+#         line_bot_api.reply_message(line_event.reply_token, TextSendMessage(text=f"{text}\n知らんけど。"))
+        line_bot_api.reply_message(line_event.reply_token, TextSendMessage(text=f"{event}"))
 
     #例外処理としての動作
     try:
