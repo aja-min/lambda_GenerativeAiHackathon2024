@@ -77,17 +77,24 @@ class Payload:
             if hasattr(self, key):
                 setattr(self, key, value)
 
-def create(text):
+def create(text, avatar_type):
     print("create method start")
     try:
         # パラメータの設定
         input_text = text
-        # 動画ファイル名
-        # いったん固定
-        object_name = "images/generated_image.png"
-        # 使用する音声ID
-        # いったん固定
-        voice_id = "ja-JP-MayuNeural"
+        # avatar_typeによって画像と音声を選択
+        if avatar_type == "男":
+            object_name = "images/generated_image_anime_man.png"
+            voice_id = "ja-JP-KeitaNeural"
+        elif avatar_type == "女":
+            object_name = "images/generated_image_anime_woman.png"
+            voice_id = "ja-JP-NanamiNeural"
+        elif avatar_type == "動物":
+            object_name = "images/generated_image_neko.png"
+            voice_id = "ja-JP-AoiNeural"
+        else:
+            print("Unknown avatar type")
+            raise ValueError("Unknown avatar type: " + avatar_type)
 
         # プリサインドURLを生成
         source_url = create_presigned_url(BUCKET_NAME, object_name)

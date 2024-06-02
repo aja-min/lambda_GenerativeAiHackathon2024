@@ -117,8 +117,8 @@ def lambda_handler(event, context):
             try:
                 print("create_video.create start")
                 # 一旦コメントアウトしたよ！
-                # video = create_video.create(text, parse_avatar(parsed_message.get("アバタータイプ")))
-                video = None
+                video = create_video.create(answer, parse_avatar(parsed_message.get("アバタータイプ")))
+                # video = None
                 print("create_video.create end video: ", video)
                 if video:
                     line_bot_api.reply_message(line_event.reply_token, TextSendMessage(text=video))
