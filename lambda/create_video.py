@@ -2,7 +2,11 @@ import os
 import boto3
 import requests
 import time
+import logging
 from dataclasses import dataclass
+
+logger = logging.getLogger()
+logger.setLevel(logging.ERROR)
 
 BUCKET_NAME = "selfintro-bot-bucket"
 D_ID_API_URL = "https://api.d-id.com/talks"
@@ -74,48 +78,53 @@ class Payload:
                 setattr(self, key, value)
 
 def create(text):
-    # パラメータの設定
-    input_text = text
-    # 動画ファイル名
-    # いったん固定
-    object_name = "images/generated_image.png"
-    # 使用する音声ID
-    # いったん固定
-    voice_id = "ja-JP-MayuNeural"
+    try:
+        # パラメータの設定
+        input_text = text
+        # 動画ファイル名
+        # いったん固定
+        object_name = "images/generated_image.png"
+        # 使用する音声ID
+        # いったん固定
+        voice_id = "ja-JP-MayuNeural"
 
-    # プリサインドURLを生成
-    source_url = create_presigned_url(BUCKET_NAME, object_name)
-    if not source_url:
-        return None
+        # プリサインドURLを生成
+        source_url = create_presigned_url(BUCKET_NAME, object_name)
+        if not source_url:
+            return None
 
-    payload = Payload()
-    payload.set_values(
-        source_url=source_url,
-        input_text=input_text,
-        voice_id=voice_id
-    )
+        payload = Payload()
+        payload.set_values(
+            source_url=source_url,
+            input_text=input_text,
+            voice_id=voice_id
+        )
 
-    talk_id = create_video_request(payload)
-    if not talk_id:
-        return None
+        talk_id = create_video_request(payload)
+        if not talk_id:
+            return None
 
-    # 動画のダウンロードURLを取得
-    result_url = get_video_url(talk_id)
-    if not result_url:
-        return None
+        # 動画のダウンロードURLを取得
+        result_url = get_video_url(talk_id)
+        if not result_url:
+            return None
 
-    # 動画をダウンロード
-    file_name = f"{talk_id}.mp4"
-    output_path = os.path.join(OUTPUT_DIR, file_name)
-    if not download_video_from_url(result_url, output_path):
-        return None
+        # 動画をダウンロード
+        file_name = f"{talk_id}.mp4"
+        output_path = os.path.join(OUTPUT_DIR, file_name)
+        if not download_video_from_url(result_url, output_path):
+            return None
 
-    # ダウンロードした動画をS3にアップロード
-    s3_upload_object_name = f"movies/{file_name}"
-    if not upload_to_s3(output_path, BUCKET_NAME, s3_upload_object_name):
-        return None
+        # ダウンロードした動画をS3にアップロード
+        s3_upload_object_name = f"movies/{file_name}"
+        if not upload_to_s3(output_path, BUCKET_NAME, s3_upload_object_name):
+            return None
 
-    return result_url
+        return result_url
+
+    except Exception as e:
+        logger.error(f"An error occurred: {e}")
+    return None
 
 def create_presigned_url(bucket_name, object_name, expiration=3600):
     """Generate a presigned URL to share an S3 object"""
