@@ -88,18 +88,24 @@ def lambda_handler(event, context):
 
         response = requests.post(chatgpt_url, headers=request_headers, data=json.dumps(request_data))
 
+        print("response get OK")
         if response.status_code == 200:
+            print("response.status_code == 200")
             result = response.json()
             answer = result["choices"][0]["message"]["content"]
 
             try:
+                print("create_video.create start")
                 video = create_video.create(text)
+                print("create_video.create end video: ", video)
                 if video:
                     line_bot_api.reply_message(line_event.reply_token, TextSendMessage(text=video))
                 else:
                     logger.error("Failed to create video.")
+                    print("Failed to create video.")
             except Exception as e:
                 logger.error(f"Error in create_video.create: {e}")
+                print(f"Error in create_video.create: {e}")
 
             # いったんURLを返す
             line_bot_api.reply_message(line_event.reply_token, TextSendMessage(text=video))
