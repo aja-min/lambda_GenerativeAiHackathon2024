@@ -92,9 +92,14 @@ def lambda_handler(event, context):
             result = response.json()
             answer = result["choices"][0]["message"]["content"]
 
-            # videoを返す
-            # 今はURLを返す想定
-            video = create_video.create(text)
+            try:
+                video = create_video.create(text)
+                if video:
+                    line_bot_api.reply_message(line_event.reply_token, TextSendMessage(text=video))
+                else:
+                    logger.error("Failed to create video.")
+            except Exception as e:
+                logger.error(f"Error in create_video.create: {e}")
 
             # いったんURLを返す
             line_bot_api.reply_message(line_event.reply_token, TextSendMessage(text=video))
