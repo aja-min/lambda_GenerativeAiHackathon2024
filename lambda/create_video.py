@@ -78,6 +78,7 @@ class Payload:
                 setattr(self, key, value)
 
 def create(text):
+    print("create method start")
     try:
         # パラメータの設定
         input_text = text
@@ -109,16 +110,16 @@ def create(text):
         if not result_url:
             return None
 
-        # 動画をダウンロード
-        file_name = f"{talk_id}.mp4"
-        output_path = os.path.join(OUTPUT_DIR, file_name)
-        if not download_video_from_url(result_url, output_path):
-            return None
+        # # 動画をダウンロード
+        # file_name = f"{talk_id}.mp4"
+        # output_path = os.path.join(OUTPUT_DIR, file_name)
+        # if not download_video_from_url(result_url, output_path):
+        #     return None
 
-        # ダウンロードした動画をS3にアップロード
-        s3_upload_object_name = f"movies/{file_name}"
-        if not upload_to_s3(output_path, BUCKET_NAME, s3_upload_object_name):
-            return None
+        # # ダウンロードした動画をS3にアップロード
+        # s3_upload_object_name = f"movies/{file_name}"
+        # if not upload_to_s3(output_path, BUCKET_NAME, s3_upload_object_name):
+        #     return None
 
         return result_url
 
@@ -127,6 +128,7 @@ def create(text):
     return None
 
 def create_presigned_url(bucket_name, object_name, expiration=3600):
+    print("create_presigned_url start")
     """Generate a presigned URL to share an S3 object"""
     s3_client = boto3.client('s3')
     try:
@@ -134,6 +136,8 @@ def create_presigned_url(bucket_name, object_name, expiration=3600):
                                                     Params={'Bucket': bucket_name,
                                                             'Key': object_name},
                                                     ExpiresIn=expiration)
+        print("create_presigned_url response get")
+        print(f"create_presigned_url response: {response.json}")
     except Exception as e:
         print(f"プリサインドURLの生成に失敗しました: {e}")
         return None
@@ -141,6 +145,7 @@ def create_presigned_url(bucket_name, object_name, expiration=3600):
     return response
 
 def create_video_request(payload):
+    print("create_video_request start")
     headers = {
         "accept": "application/json",
         "content-type": "application/json",
@@ -149,6 +154,8 @@ def create_video_request(payload):
 
     # POSTリクエストを送信してレスポンスを受け取る
     post_response = requests.post(D_ID_API_URL, json=payload.to_dict(), headers=headers)
+    print("post_response get")
+    print(f"post_response: {post_response.json}")
     if post_response.status_code != 201:
         print(f"POSTリクエストが失敗しました。ステータスコード: {post_response.status_code}, レスポンス: {post_response.text}")
         return None
@@ -162,6 +169,7 @@ def create_video_request(payload):
     return talk_id
 
 def get_video_url(talk_id):
+    print("get_video_url start")
     headers = {
         "accept": "application/json",
         "content-type": "application/json",
