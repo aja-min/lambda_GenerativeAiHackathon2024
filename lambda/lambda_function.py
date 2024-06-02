@@ -7,7 +7,7 @@ import re
 import create_video
 
 from linebot import (LineBotApi, WebhookHandler)
-from linebot.models import (MessageEvent, TextMessage, TextSendMessage, VideoSendMessage)
+from linebot.models import (MessageEvent, TextMessage, TextSendMessage, ImageMessage, VideoSendMessage)
 from linebot.exceptions import (LineBotApiError, InvalidSignatureError)
 
 logger = logging.getLogger()
@@ -18,7 +18,7 @@ logger.setLevel(logging.ERROR)
 channel_secret = os.getenv('LINE_CHANNEL_SECRET', None)
 channel_access_token = os.getenv('LINE_CHANNEL_ACCESS_TOKEN', None)
 
-#無いならエラー
+# 無いならエラー
 if channel_secret is None:
     logger.error('Specify LINE_CHANNEL_SECRET as environment variable.')
     # sys.exit(1)
@@ -26,9 +26,21 @@ if channel_access_token is None:
     logger.error('Specify LINE_CHANNEL_ACCESS_TOKEN as environment variable.')
     # sys.exit(1)
 
-#apiとhandlerの生成（チャンネルアクセストークンとシークレットを渡す）
+# apiとhandlerの生成（チャンネルアクセストークンとシークレットを渡す）
 line_bot_api = LineBotApi(channel_access_token)
 handler = WebhookHandler(channel_secret)
+
+# ユーザーの状態を保持する辞書
+user_state = {}
+
+# 質問リスト
+questions = [
+    "名前は？",
+    "趣味は？",
+    "一言！",
+    "自己紹介のテイストは？",
+    "アバターを使いますか？（はい/いいえ）"
+]
 
 # chatgptとの接続準備
 chatgpt_url = "https://api.openai.com/v1/chat/completions"
@@ -37,16 +49,68 @@ request_headers = {
     "Authorization": f"Bearer {os.environ.get('OPENAI_API_KEY')}"
 }
 
-line_format = """フォーマットにしたがって入力してみてね！
+def ask_next_question(user_id, reply_token):
+    """
+    ユーザーの状態に基づいて次の質問を送信する。
+    すべての質問が終わった後はChatGPTを呼び出し、アバターの質問を行う。
+    """
+    state = user_state[user_id]
+    
+    # まだ通常の質問が残っている場合
+    if state["step"] < len(questions):
+        next_question = questions[state["step"]]
+        line_bot_api.reply_message(reply_token, TextSendMessage(text=next_question))
+        state["step"] += 1
 
-名前:
-趣味:
-一言:
-自己紹介のテイスト:
-アバタータイプ:
-"""
+    # アバターを使うかの質問に答えた後
+    elif state["step"] == len(questions):
+        state["data"]["アバターを使うか"] = state["last_message"]
+        if state["last_message"] == "はい":
+            line_bot_api.reply_message(reply_token, TextSendMessage(text="性別を教えてください (男性/女性)"))
+        else:
+            line_bot_api.reply_message(reply_token, TextSendMessage(text="プロフィール画像をアップロードしてください"))
+        state["step"] += 1
 
-#Lambdaのメインの動作
+    # アバターの性別を答えた後または画像アップロード後の処理
+    elif state["step"] == len(questions) + 1:
+        if state["data"]["アバターを使うか"] == "はい":
+            state["data"]["性別"] = state["last_message"]
+        else:
+            state["data"]["プロフィール画像"] = "アップロード済み"
+
+        # ChatGPTを呼び出す
+        call_chatgpt(user_id, reply_token)
+        reset_user_state(user_id)
+
+def call_chatgpt(user_id, reply_token):
+    """
+    ChatGPTを呼び出してユーザーの自己紹介文を生成し、アバターの質問を行う。
+    """
+    user_data = user_state[user_id]["data"]
+    request_data = {
+        "model": "gpt-3.5-turbo",
+        "messages": [
+            {"role": "system", "content": "あなたは親切で丁寧な自己紹介生成マシンです。ユーザーから「名前」、「趣味」、「一言」と、自己紹介の希望テイストが送られて来るので、なるべく自然な言葉で漢字を含む100文字程度で自己紹介文を生成してください。そしてそれを全部ひらがなに直してください。"},
+            {"role": "user", "content": f"名前は{user_data['名前']}で、趣味は{user_data['趣味']}です。{user_data['一言']}.{user_data['自己紹介のテイスト']}な感じで自己紹介を作成してください。"}
+        ]
+    }
+
+    response = requests.post(chatgpt_url, headers=request_headers, data=json.dumps(request_data))
+
+    if response.status_code == 200:
+        result = response.json()
+        answer = result["choices"][0]["message"]["content"]
+        line_bot_api.reply_message(reply_token, TextSendMessage(text=answer))
+    else:
+        line_bot_api.reply_message(reply_token, TextSendMessage(text=f"Error: {response.status_code}, {response.text}"))
+
+def reset_user_state(user_id):
+    """
+    ユーザーの状態をリセットする。
+    """
+    user_state[user_id] = {"step": 0, "data": {}, "last_message": ""}
+
+# Lambdaのメインの動作
 def lambda_handler(event, context):
     print("Event:", event)
     # 認証用のx-line-signatureヘッダー
@@ -76,70 +140,44 @@ def lambda_handler(event, context):
         "body": "Error"
     }
 
-    #メッセージを受け取る・受け取ったら受け取ったテキストを返信する
+    # メッセージを受け取る・受け取ったら受け取ったテキストを返信する
     @handler.add(MessageEvent, message=TextMessage)
-    def message(line_event):
-        # 受け取ったテキスト
-        """
-        フォーマットはこの通り
-        ------------------------
-        名前: hogehoge
-        趣味: fugafuga
-        一言: piyopiyo
-        自己紹介のテイスト: hahahaha
-        アバタータイプ: xxxx
-        ------------------------
-        """
+    def handle_text_message(line_event):
+        user_id = line_event.source.user_id
         text = line_event.message.text
-        parsed_message = parse_message(text)
 
-        if not parsed_message:
-            line_bot_api.reply_message(line_event.reply_token, TextSendMessage(text=line_format))
+        # ユーザーの状態を取得または初期化
+        if user_id not in user_state:
+            reset_user_state(user_id)
 
+        state = user_state[user_id]
+        state["last_message"] = text
 
-        # chatgptにリクエストする
-        request_data = {
-            "model": "gpt-3.5-turbo",
-            "messages": [
-                {"role": "system", "content": "あなたは親切で丁寧な自己紹介生成マシンです。ユーザーから「名前」、「趣味」、「一言」と、自己紹介の希望テイストが送られて来るので、なるべく自然な言葉で漢字を含む100文字程度で自己紹介文を生成してください。そしてそれを全部ひらがなに直してください。"},
-                {"role": "user", "content": f"名前は{parsed_message.get("名前")}で、趣味は{parsed_message.get("趣味")}です。{parsed_message.get("一言")}。{parsed_message.get("自己紹介のテイスト")}な感じで自己紹介を作成してください。" }
-            ]
-        }
+        # 現在の質問に対する回答を保存
+        if state["step"] > 0 and state["step"] <= len(questions):
+            question_key = ["名前", "趣味", "一言", "自己紹介のテイスト", "アバターを使うか"][state["step"] - 1]
+            state["data"][question_key] = text
 
-        response = requests.post(chatgpt_url, headers=request_headers, data=json.dumps(request_data))
+        ask_next_question(user_id, line_event.reply_token)
 
-        print(f"OpenAI response: {response.json}")
-        if response.status_code == 200:
-            print("response.status_code == 200")
-            result = response.json()
-            answer = result["choices"][0]["message"]["content"]
+    @handler.add(MessageEvent, message=ImageMessage)
+    def handle_image_message(line_event):
+        user_id = line_event.source.user_id
 
-            try:
-                print("create_video.create start")
-                video_s3_url, thumbnail_s3_url = create_video.create(answer, parse_avatar(parsed_message.get("アバタータイプ")))
-                print("create_video.create end video: ", video_s3_url, thumbnail_s3_url)
-                if video_s3_url:
-                    # LINEに動画を送信
-                    video_message = VideoSendMessage(
-                        original_content_url=video_s3_url,
-                        preview_image_url=thumbnail_s3_url
-                    )
-                    line_bot_api.reply_message(line_event.reply_token, video_message)
-                else:
-                    line_bot_api.reply_message(line_event.reply_token, TextSendMessage(text=f"{parsed_message.get('名前')}、{parsed_message.get('趣味')}、{parsed_message.get('一言')}、{parsed_message.get('自己紹介のテイスト')}、{parsed_message.get('アバタータイプ')}"))
-                    logger.error("Failed to create video.")
-                    print("Failed to create video.")
-            except Exception as e:
-                logger.error(f"Error in create_video.create: {e}")
-                print(f"Error in create_video.create: {e}")
+        # ユーザーの状態を取得または初期化
+        if user_id not in user_state:
+            reset_user_state(user_id)
 
-            # いったんURLを返す
-            line_bot_api.reply_message(line_event.reply_token, TextSendMessage(text=video))
+        state = user_state[user_id]
 
-        else:
-            line_bot_api.reply_message(line_event.reply_token, TextSendMessage(f"Error: {response.status_code}, {response.text}"))
+        if state["step"] == len(questions) + 1 and state["data"]["アバターを使うか"] == "いいえ":
+            message_content = line_bot_api.get_message_content(line_event.message.id)
+            with open(f"/tmp/{line_event.message.id}.jpg", "wb") as f:
+                for chunk in message_content.iter_content():
+                    f.write(chunk)
+            state["data"]["画像"] = f"/tmp/{line_event.message.id}.jpg"
+            ask_next_question(user_id, line_event.reply_token)
 
-    #例外処理としての動作
     try:
         handler.handle(body, signature)
     except LineBotApiError as e:
@@ -151,34 +189,3 @@ def lambda_handler(event, context):
         return error_json
 
     return ok_json
-
-def parse_message(message):
-    # 正規表現パターン
-    pattern = r"名前:(.*)趣味:(.*)一言:(.*)自己紹介のテイスト:(.*)アバタータイプ:(.*)"
-
-    # 全角コロンを半角コロンに置換
-    message = message.replace("：", ":")
-
-    # 正規表現でメッセージを検索
-    match = re.search(pattern, message, re.DOTALL)  # re.DOTALLは複数行にまたがる場合に必要
-
-    if match:
-        # 抽出した情報を辞書に格納
-        data = {
-            "名前": match.group(1).strip(),
-            "趣味": match.group(2).strip(),
-            "一言": match.group(3).strip(),
-            "自己紹介のテイスト": match.group(4).strip(),
-            "アバタータイプ": match.group(5).strip()
-        }
-        return data
-    else:
-        return None  # パース失敗
-
-def parse_avatar(avatar_type):
-    if "男" in avatar_type:
-        return "男性"
-    elif "女" in avatar_type:
-        return "女性"
-    else:
-        return "動物"
