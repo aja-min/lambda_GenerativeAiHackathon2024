@@ -128,10 +128,10 @@ def create(text, avatar_type):
         s3_url = upload_to_s3(output_path, BUCKET_NAME, s3_upload_object_name)
         if not s3_url:
             return None 
-        # サムネイルを生成
-        thumbnail_path = generate_thumbnail(BUCKET_NAME, object_name)
+        
+        url = create_presigned_url(BUCKET_NAME, f"movies/{file_name}")
 
-        return s3_upload_object_name, thumbnail_path
+        return url, source_url
 
     except Exception as e:
         logger.error(f"An error occurred: {e}")
