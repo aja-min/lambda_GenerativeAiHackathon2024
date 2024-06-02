@@ -88,7 +88,7 @@ def lambda_handler(event, context):
 
         response = requests.post(chatgpt_url, headers=request_headers, data=json.dumps(request_data))
 
-        print("response get OK")
+        print(f"OpenAI response: {response.json}")
         if response.status_code == 200:
             print("response.status_code == 200")
             result = response.json()
