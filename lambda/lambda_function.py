@@ -100,23 +100,21 @@ def call_chatgpt(user_id, reply_token):
             {
                 "role": "system",
                 "content": (
-                    "You have the writing skills to creatively and effectively construct self-introduction profiles. "
-                    "You are also knowledgeable about Japanese manga, entertainment, and memes. "
-                    "Generate a natural self-introduction in Japanese, using around 100 characters with kanji where appropriate. "
-                    "Then convert the entire introduction into hiragana."
+                    "あなたはクリエイティブで効果的な自己紹介プロフィールを構築するライティングスキルを持っています。"
+                    "また、日本の漫画やエンターテインメント、ミームについても詳しいです。"
+                    "ひらがなだけを使って自然な自己紹介文を生成してください。"
                 )
             },
             {
                 "role": "user",
                 "content": (
-                    "1. Ensure the profile leaves a clear and understandable impression on the reader by carefully choosing your words.\n"
-                    "2. Organize the sentence structure to convey information in a well-ordered flow.\n"
-                    "3. The profile should follow a general format, while also expressing individuality and personality.\n\n"
-                    "Use the following conditions to create the profile:\n"
-                    f"名前: {user_data.get('名前')}\n"
-                    f"趣味: {user_data.get('趣味')}\n"
-                    f"一言: {user_data.get('一言')}\n"
-                    f"テイスト: {user_data.get('自己紹介のテイスト')}"
+                    "以下の条件を使って、面白くて個性的な自己紹介文を作ってください。"
+                    "1. 読み手に明確で分かりやすい印象を与えるように、言葉選びに注意してください。\n"
+                    "3. 漢字も含めて書くと100文字程度になるように作ってください。\n\n"
+                    f"なまえ: {user_data.get('名前')}\n"
+                    f"しゅみ: {user_data.get('趣味')}\n"
+                    f"ひとこと: {user_data.get('一言')}\n"
+                    f"ていすと: {user_data.get('自己紹介のテイスト')}\n\n"
                 )
             }
         ]
