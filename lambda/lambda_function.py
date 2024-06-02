@@ -91,7 +91,7 @@ def call_chatgpt(user_id, reply_token):
         "model": "gpt-3.5-turbo",
         "messages": [
             {"role": "system", "content": "あなたは親切で丁寧な自己紹介生成マシンです。ユーザーから「名前」、「趣味」、「一言」と、自己紹介の希望テイストが送られて来るので、なるべく自然な言葉で漢字を含む100文字程度で自己紹介文を生成してください。そしてそれを全部ひらがなに直してください。"},
-            {"role": "user", "content": f"名前は{user_data['名前']}で、趣味は{user_data['趣味']}です。{user_data['一言']}.{user_data['自己紹介のテイスト']}な感じで自己紹介を作成してください。"}
+            {"role": "user", "content": f"名前は{user_data.get("名前")}で、趣味は{user_data.get("趣味")}です。{user_data.get("一言")}.{user_data.get("自己紹介のテイスト")}な感じで自己紹介を作成してください。"}
         ]
     }
 
@@ -101,7 +101,7 @@ def call_chatgpt(user_id, reply_token):
         result = response.json()
         answer = result["choices"][0]["message"]["content"]
         # 動画生成
-        video_message = create_video_message(answer, user_data["性別"], user_data["プロフィール画像"])
+        video_message = create_video_message(answer, user_data.get("性別"), user_data.get("プロフィール画像"))
         line_bot_api.reply_message(reply_token, video_message)
     else:
         line_bot_api.reply_message(reply_token, TextSendMessage(text=f"Error: {response.status_code}, {response.text}"))
