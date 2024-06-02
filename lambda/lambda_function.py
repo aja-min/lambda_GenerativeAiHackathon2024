@@ -66,9 +66,9 @@ def ask_next_question(user_id, reply_token):
     elif state["step"] == len(questions):
         state["data"]["アバターを使うか"] = state["last_message"]
         if state["last_message"] == "はい":
-            line_bot_api.reply_message(reply_token, TextSendMessage(text="性別を教えてください (男性/女性)"))
+            line_bot_api.reply_message(reply_token, TextSendMessage(text="アバターの性別をどちらにするか教えてください (男性/女性)"))
         else:
-            line_bot_api.reply_message(reply_token, TextSendMessage(text="プロフィール画像をアップロードしてください"))
+            line_bot_api.reply_message(reply_token, TextSendMessage(text="プロフィール画像をアップロードしてください ※バストアップで人の顔とはっきりわかる画像をあげてください"))
         state["step"] += 1
 
     # アバターの性別を答えた後または画像アップロード後の処理
@@ -101,13 +101,13 @@ def call_chatgpt(user_id, reply_token):
         result = response.json()
         answer = result["choices"][0]["message"]["content"]
         # 動画生成
-        video_message = create_video_message(answer, user_data['性別'])
+        video_message = create_video_message(answer, user_data["性別"], user_data["プロフィール画像"])
         line_bot_api.reply_message(reply_token, video_message)
     else:
         line_bot_api.reply_message(reply_token, TextSendMessage(text=f"Error: {response.status_code}, {response.text}"))
 
-def create_video_message(text, avatar_type):
-    video_s3_url, thumbnail_s3_url = create_video.create(text, avatar_type)
+def create_video_message(text, avatar_type, profile_picture):
+    video_s3_url, thumbnail_s3_url = create_video.create(text, avatar_type, profile_picture)
     print("create_video.create end video: ", video_s3_url, thumbnail_s3_url)
     if video_s3_url:
         # LINEに動画を送信
