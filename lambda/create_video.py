@@ -200,10 +200,10 @@ def get_video_url(talk_id):
                 if result_url:
                     return result_url
                 else:
-                    print("result_urlが見つかりません。")
+                    print(f"result_urlが見つかりません。 {get_response_data}")
                     return None
             elif status == 'error':
-                print("動画の作成中にエラーが発生しました。")
+                print(f"動画の作成中にエラーが発生しました。 {get_response_data}")
                 return None
             else:
                 print(f"動画のステータス: {status}。しばらく待機します...")
