@@ -117,18 +117,21 @@ def create(text, avatar_type):
         if not result_url:
             return None
 
-        # # 動画をダウンロード
-        # file_name = f"{talk_id}.mp4"
-        # output_path = os.path.join(OUTPUT_DIR, file_name)
-        # if not download_video_from_url(result_url, output_path):
-        #     return None
+        # 動画をダウンロード
+        file_name = f"{talk_id}.mp4"
+        output_path = os.path.join(OUTPUT_DIR, file_name)
+        if not download_video_from_url(result_url, output_path):
+            return None
 
-        # # ダウンロードした動画をS3にアップロード
-        # s3_upload_object_name = f"movies/{file_name}"
-        # if not upload_to_s3(output_path, BUCKET_NAME, s3_upload_object_name):
-        #     return None
+        # ダウンロードした動画をS3にアップロード
+        s3_upload_object_name = f"movies/{file_name}"
+        s3_url = upload_to_s3(output_path, BUCKET_NAME, s3_upload_object_name)
+        if not s3_url:
+            return None 
+        # サムネイルを生成
+        thumbnail_path = generate_thumbnail(BUCKET_NAME, object_name)
 
-        return result_url
+        return s3_upload_object_name, thumbnail_path
 
     except Exception as e:
         logger.error(f"An error occurred: {e}")
@@ -218,10 +221,10 @@ def upload_to_s3(file_path, bucket_name, object_name):
     try:
         s3_client.upload_file(file_path, bucket_name, object_name)
         print(f"ファイルが {bucket_name}/{object_name} にアップロードされました。")
+        return f"https://{bucket_name}.s3.amazonaws.com/{object_name}"
     except Exception as e:
         print(f"S3へのファイルアップロードに失敗しました: {e}")
-        return False
-    return True
+        return None
 
 def download_video_from_url(video_url, output_path):
     response = requests.get(video_url, stream=True)
@@ -234,3 +237,6 @@ def download_video_from_url(video_url, output_path):
         print(f"動画のダウンロードに失敗しました。ステータスコード: {response.status_code}, レスポンス: {response.text}")
         return False
     return True
+
+def generate_thumbnail(bucket_name, object_name):
+    return f"https://{bucket_name}.s3.amazonaws.com/{object_name}"

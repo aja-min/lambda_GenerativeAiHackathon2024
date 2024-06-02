@@ -7,7 +7,7 @@ import re
 import create_video
 
 from linebot import (LineBotApi, WebhookHandler)
-from linebot.models import (MessageEvent, TextMessage, TextSendMessage)
+from linebot.models import (MessageEvent, TextMessage, TextSendMessage, VideoSendMessage)
 from linebot.exceptions import (LineBotApiError, InvalidSignatureError)
 
 logger = logging.getLogger()
@@ -101,7 +101,7 @@ def lambda_handler(event, context):
         request_data = {
             "model": "gpt-3.5-turbo",
             "messages": [
-                {"role": "system", "content": "あなたは親切で丁寧な自己紹介生成マシンです。ユーザーから「名前」、「趣味」、「一言」と、自己紹介の希望テイストが送られて来るので、なるべく自然な言葉で100文字程度で自己紹介文を生成してください。"},
+                {"role": "system", "content": "あなたは親切で丁寧な自己紹介生成マシンです。ユーザーから「名前」、「趣味」、「一言」と、自己紹介の希望テイストが送られて来るので、なるべく自然な言葉で漢字を含む100文字程度で自己紹介文を生成してください。そしてそれを全部ひらがなに直してください。"},
                 {"role": "user", "content": f"名前は{parsed_message.get("名前")}で、趣味は{parsed_message.get("趣味")}です。{parsed_message.get("一言")}。{parsed_message.get("自己紹介のテイスト")}な感じで自己紹介を作成してください。" }
             ]
         }
@@ -116,14 +116,17 @@ def lambda_handler(event, context):
 
             try:
                 print("create_video.create start")
-                # 一旦コメントアウトしたよ！
-                video = create_video.create(answer, parse_avatar(parsed_message.get("アバタータイプ")))
-                # video = None
-                print("create_video.create end video: ", video)
-                if video:
-                    line_bot_api.reply_message(line_event.reply_token, TextSendMessage(text=video))
+                video_s3_url, thumbnail_s3_url = create_video.create(answer, parse_avatar(parsed_message.get("アバタータイプ")))
+                print("create_video.create end video: ", video_s3_url, thumbnail_s3_url)
+                if video_s3_url:
+                    # LINEに動画を送信
+                    video_message = VideoSendMessage(
+                        original_content_url=video_s3_url,
+                        preview_image_url=thumbnail_s3_url
+                    )
+                    line_bot_api.reply_message(line_event.reply_token, video_message)
                 else:
-                    line_bot_api.reply_message(line_event.reply_token, TextSendMessage(text=f"{parsed_message.get("名前")}、{parsed_message.get("趣味")}、{parsed_message.get("一言")}、{parsed_message.get("自己紹介のテイスト")}、{parsed_message.get("アバタータイプ")}"))
+                    line_bot_api.reply_message(line_event.reply_token, TextSendMessage(text=f"{parsed_message.get('名前')}、{parsed_message.get('趣味')}、{parsed_message.get('一言')}、{parsed_message.get('自己紹介のテイスト')}、{parsed_message.get('アバタータイプ')}"))
                     logger.error("Failed to create video.")
                     print("Failed to create video.")
             except Exception as e:
