@@ -87,11 +87,38 @@ def call_chatgpt(user_id, reply_token):
     ChatGPTを呼び出してユーザーの自己紹介文を生成し、アバターの質問を行う。
     """
     user_data = user_state[user_id]["data"]
+    # request_data = {
+    #     "model": "gpt-3.5-turbo",
+    #     "messages": [
+    #         {"role": "system", "content": "あなたは親切で丁寧な自己紹介生成マシンです。ユーザーから「名前」、「趣味」、「一言」と、自己紹介の希望テイストが送られて来るので、なるべく自然な言葉で漢字を含む100文字程度で自己紹介文を生成してください。そしてそれを全部ひらがなに直してください。"},
+    #         {"role": "user", "content": f"名前は{user_data.get("名前")}で、趣味は{user_data.get("趣味")}です。{user_data.get("一言")}.{user_data.get("自己紹介のテイスト")}な感じで自己紹介を作成してください。"}
+    #     ]
+    # }
     request_data = {
         "model": "gpt-3.5-turbo",
         "messages": [
-            {"role": "system", "content": "あなたは親切で丁寧な自己紹介生成マシンです。ユーザーから「名前」、「趣味」、「一言」と、自己紹介の希望テイストが送られて来るので、なるべく自然な言葉で漢字を含む100文字程度で自己紹介文を生成してください。そしてそれを全部ひらがなに直してください。"},
-            {"role": "user", "content": f"名前は{user_data.get("名前")}で、趣味は{user_data.get("趣味")}です。{user_data.get("一言")}.{user_data.get("自己紹介のテイスト")}な感じで自己紹介を作成してください。"}
+            {
+                "role": "system",
+                "content": (
+                    "You have the writing skills to creatively and effectively construct self-introduction profiles. "
+                    "You are also knowledgeable about Japanese manga, entertainment, and memes. "
+                    "Generate a natural self-introduction in Japanese, using around 100 characters with kanji where appropriate. "
+                    "Then convert the entire introduction into hiragana."
+                )
+            },
+            {
+                "role": "user",
+                "content": (
+                    "1. Ensure the profile leaves a clear and understandable impression on the reader by carefully choosing your words.\n"
+                    "2. Organize the sentence structure to convey information in a well-ordered flow.\n"
+                    "3. The profile should follow a general format, while also expressing individuality and personality.\n\n"
+                    "Use the following conditions to create the profile:\n"
+                    f"名前: {user_data.get('名前')}\n"
+                    f"趣味: {user_data.get('趣味')}\n"
+                    f"一言: {user_data.get('一言')}\n"
+                    f"テイスト: {user_data.get('自己紹介のテイスト')}"
+                )
+            }
         ]
     }
 
@@ -101,7 +128,7 @@ def call_chatgpt(user_id, reply_token):
         result = response.json()
         answer = result["choices"][0]["message"]["content"]
         # 動画生成
-        video_message = create_video_message(answer, user_data.get("性別"), user_data.get("プロフィール画像"))
+        video_message = create_video_message(answer, user_data.get("性別"), user_data.get("画像"))
         line_bot_api.reply_message(reply_token, video_message)
     else:
         line_bot_api.reply_message(reply_token, TextSendMessage(text=f"Error: {response.status_code}, {response.text}"))
