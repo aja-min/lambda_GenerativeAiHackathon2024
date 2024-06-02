@@ -36,6 +36,15 @@ request_headers = {
     "Authorization": f"Bearer {os.environ.get('OPENAI_API_KEY')}"
 }
 
+line_format = """フォーマットにしたがって入力してみてね！
+
+名前:
+趣味:
+一言:
+自己紹介のテイスト:
+アバタータイプ:
+"""
+
 #Lambdaのメインの動作
 def lambda_handler(event, context):
     print("Event:", event)
@@ -70,19 +79,29 @@ def lambda_handler(event, context):
     @handler.add(MessageEvent, message=TextMessage)
     def message(line_event):
         # 受け取ったテキスト
+        """
+        フォーマットはこの通り
+        ------------------------
+        名前: hogehoge
+        趣味: fugafuga
+        一言: piyopiyo
+        自己紹介のテイスト: hahahaha
+        アバタータイプ: xxxx
+        ------------------------
+        """
         text = line_event.message.text
+        parsed_message = parse_message(text)
 
-        # メッセージに入ってて欲しい単語
-        validate_words = ["名前", "趣味", "一言", "テイスト"]
-        if not all(word in text for word in validate_words):
-            line_bot_api.reply_message(line_event.reply_token, TextSendMessage(text="フォーマットにしたがって入力してみてね！"))
+        if not parsed_message:
+            line_bot_api.reply_message(line_event.reply_token, TextSendMessage(text=line_format))
+
 
         # chatgptにリクエストする
         request_data = {
             "model": "gpt-3.5-turbo",
             "messages": [
                 {"role": "system", "content": "あなたは親切で丁寧な自己紹介生成マシンです。ユーザーから「名前」、「趣味」、「一言」と、自己紹介の希望テイストが送られて来るので、なるべく自然な言葉で100文字程度で自己紹介文を生成してください。"},
-                {"role": "user", "content": text }
+                {"role": "user", "content": f"名前は{parsed_message.get("名前")}で、趣味は{parsed_message.get("趣味")}です。{parsed_message.get("一言")}。{parsed_message.get("自己紹介のテイスト")}な感じで自己紹介を作成してください。" }
             ]
         }
 
@@ -96,11 +115,13 @@ def lambda_handler(event, context):
 
             try:
                 print("create_video.create start")
-                video = create_video.create(text)
+                # 一旦コメントアウトしたよ！
+                # video = create_video.create(text, parse_avatar(parsed_message.get("アバタータイプ")))
                 print("create_video.create end video: ", video)
                 if video:
                     line_bot_api.reply_message(line_event.reply_token, TextSendMessage(text=video))
                 else:
+                    line_bot_api.reply_message(line_event.reply_token, TextSendMessage(text=f"{parsed_message.get("名前")}、{parsed_message.get("趣味")}、{parsed_message.get("一言")}、{parsed_message.get("自己紹介のテイスト")}、{parsed_message.get("アバタータイプ")}"))
                     logger.error("Failed to create video.")
                     print("Failed to create video.")
             except Exception as e:
@@ -110,10 +131,8 @@ def lambda_handler(event, context):
             # いったんURLを返す
             line_bot_api.reply_message(line_event.reply_token, TextSendMessage(text=video))
 
-            # 今はテキストを返す
-            line_bot_api.reply_message(line_event.reply_token, TextSendMessage(text=answer))
         else:
-            line_bot_api.reply_message(f"Error: {response.status_code}, {response.text}")
+            line_bot_api.reply_message(line_event.reply_token, TextSendMessage(f"Error: {response.status_code}, {response.text}")
 
     #例外処理としての動作
     try:
@@ -127,3 +146,34 @@ def lambda_handler(event, context):
         return error_json
 
     return ok_json
+
+def parse_message(message):
+    # 正規表現パターン
+    pattern = r"名前:(.*)趣味:(.*)一言:(.*)自己紹介のテイスト:(.*)アバタータイプ:(.*)"
+
+    # 全角コロンを半角コロンに置換
+    message = message.replace("：", ":")
+
+    # 正規表現でメッセージを検索
+    match = re.search(pattern, message, re.DOTALL)  # re.DOTALLは複数行にまたがる場合に必要
+
+    if match:
+        # 抽出した情報を辞書に格納
+        data = {
+            "名前": match.group(1).strip(),
+            "趣味": match.group(2).strip(),
+            "一言": match.group(3).strip(),
+            "自己紹介のテイスト": match.group(4).strip(),
+            "アバタータイプ": match.group(5).strip()
+        }
+        return data
+    else:
+        return None  # パース失敗
+
+def parse_avatar(avatar_type):
+    if "男" in avatar_type:
+        return "男性"
+    elif "女" in avatar_type:
+        return "女性"
+    else:
+        return "動物"
