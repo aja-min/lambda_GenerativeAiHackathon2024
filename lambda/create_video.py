@@ -77,7 +77,7 @@ class Payload:
             if hasattr(self, key):
                 setattr(self, key, value)
 
-def create(text, avatar_type, profile_picture):
+def create(text, avatar_type, profile_picture_path):
     print("create method start")
     try:
         # パラメータの設定
@@ -91,16 +91,10 @@ def create(text, avatar_type, profile_picture):
             voice_id = "ja-JP-NanamiNeural"
         elif avatar_type is None:
             # アバタータイプが指定されていない場合はプロフィール画像を使用する
-            print(f"profile_picture: {profile_picture}")
-            raise ValueError("いったんエラー " + avatar_type)
-            # s3_object_name = upload_to_s3(profile_picture, BUCKET_NAME, f"image/{os.path.basename(profile_picture_path)}")
-            # if not s3_object_name:
-            #     return None
-            # object_name = s3_object_name
-            # voice_id = "ja-JP-AoiNeural"
-            # # ここに処理を追加する
-            # object_name = "images/generated_image_neko.png"
-            # voice_id = "ja-JP-AoiNeural"
+            upload_file_path = f"image/{os.path.basename(profile_picture_path)}"
+            upload_to_s3(profile_picture_path, BUCKET_NAME, upload_file_path)
+            object_name = upload_file_path
+            voice_id = "ja-JP-AoiNeural"
         else:
             print("Unknown avatar type")
             raise ValueError("Unknown avatar type: " + avatar_type)
