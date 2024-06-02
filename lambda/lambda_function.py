@@ -132,7 +132,7 @@ def lambda_handler(event, context):
             line_bot_api.reply_message(line_event.reply_token, TextSendMessage(text=video))
 
         else:
-            line_bot_api.reply_message(line_event.reply_token, TextSendMessage(f"Error: {response.status_code}, {response.text}")
+            line_bot_api.reply_message(line_event.reply_token, TextSendMessage(f"Error: {response.status_code}, {response.text}"))
 
     #例外処理としての動作
     try:
