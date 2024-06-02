@@ -100,7 +100,6 @@ def call_chatgpt(user_id, reply_token):
     if response.status_code == 200:
         result = response.json()
         answer = result["choices"][0]["message"]["content"]
-        line_bot_api.reply_message(reply_token, TextSendMessage(text=answer))
         # 動画生成
         video_message = create_video(answer, user_data['性別'])
         line_bot_api.reply_message(reply_token, video_message)
