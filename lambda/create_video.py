@@ -138,7 +138,6 @@ def create_presigned_url(bucket_name, object_name, expiration=3600):
                                                             'Key': object_name},
                                                     ExpiresIn=expiration)
         print("create_presigned_url response get")
-        print(f"create_presigned_url response: {response.json}")
     except Exception as e:
         print(f"プリサインドURLの生成に失敗しました: {e}")
         return None
@@ -156,7 +155,7 @@ def create_video_request(payload):
     # POSTリクエストを送信してレスポンスを受け取る
     post_response = requests.post(D_ID_API_URL, json=payload.to_dict(), headers=headers)
     print("post_response get")
-    print(f"post_response: {post_response.json}")
+    print(f"post_response: {post_response}")
     if post_response.status_code != 201:
         print(f"POSTリクエストが失敗しました。ステータスコード: {post_response.status_code}, レスポンス: {post_response.text}")
         return None
