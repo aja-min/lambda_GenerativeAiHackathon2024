@@ -101,12 +101,12 @@ def call_chatgpt(user_id, reply_token):
         result = response.json()
         answer = result["choices"][0]["message"]["content"]
         # 動画生成
-        video_message = create_video(answer, user_data['性別'])
+        video_message = create_video_message(answer, user_data['性別'])
         line_bot_api.reply_message(reply_token, video_message)
     else:
         line_bot_api.reply_message(reply_token, TextSendMessage(text=f"Error: {response.status_code}, {response.text}"))
 
-def create_video(text, avatar_type):
+def create_video_message(text, avatar_type):
     video_s3_url, thumbnail_s3_url = create_video.create(text, avatar_type)
     print("create_video.create end video: ", video_s3_url, thumbnail_s3_url)
     if video_s3_url:
