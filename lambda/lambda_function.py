@@ -3,6 +3,7 @@ import sys
 import logging
 import requests
 import json
+import create_video
 
 from linebot import (LineBotApi, WebhookHandler)
 from linebot.models import (MessageEvent, TextMessage, TextSendMessage)
@@ -92,7 +93,11 @@ def lambda_handler(event, context):
             answer = result["choices"][0]["message"]["content"]
 
             # videoを返す
-            # video = create_video.create(text)
+            # 今はURLを返す想定
+            video = create_video.create(text)
+
+            # いったんURLを返す
+            line_bot_api.reply_message(line_event.reply_token, TextSendMessage(text=video))
 
             # 今はテキストを返す
             line_bot_api.reply_message(line_event.reply_token, TextSendMessage(text=answer))
