@@ -83,10 +83,10 @@ def create(text, avatar_type):
         # パラメータの設定
         input_text = text
         # avatar_typeによって画像と音声を選択
-        if avatar_type == "男":
+        if avatar_type == "男性":
             object_name = "images/generated_image_anime_man.png"
             voice_id = "ja-JP-KeitaNeural"
-        elif avatar_type == "女":
+        elif avatar_type == "女性":
             object_name = "images/generated_image_anime_woman.png"
             voice_id = "ja-JP-NanamiNeural"
         elif avatar_type == "動物":
