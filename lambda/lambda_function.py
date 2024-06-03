@@ -78,9 +78,6 @@ def ask_next_question(user_id, reply_token):
         else:
             state["data"]["プロフィール画像"] = "アップロード済み"
 
-        # 処理中メッセージを送信
-        line_bot_api.push_message(reply_token, TextSendMessage(text="動画を作成中です。少々お待ちください。"))
-
         try:
             # ChatGPTを呼び出す
             call_chatgpt(user_id, reply_token)
