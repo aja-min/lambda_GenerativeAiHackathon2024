@@ -35,11 +35,11 @@ user_state = {}
 
 # 質問リスト
 questions = [
-    "名前は？",
-    "趣味は？",
-    "一言！",
-    "自己紹介のテイストは？",
-    "アバターを使いますか？（はい/いいえ）"
+    "自己紹介作成を始めます🎉 あなたのことを教えてください❗お名前は❓",
+    "趣味を教えて🎨",
+    "みんなに伝えたい一言🗣️",
+    "自己紹介はどんなテイストにする❓✨",
+    "アバターを使いますか❓（はい/いいえ）👤"
 ]
 
 # chatgptとの接続準備
@@ -66,9 +66,9 @@ def ask_next_question(user_id, reply_token):
     elif state["step"] == len(questions):
         state["data"]["アバターを使うか"] = state["last_message"]
         if state["last_message"] == "はい":
-            line_bot_api.reply_message(reply_token, TextSendMessage(text="アバターの性別をどちらにするか教えてください (男性/女性)"))
+            line_bot_api.reply_message(reply_token, TextSendMessage(text="アバターの性別をどちらにするか教えてください❗ (男性👨/女性👩)"))
         else:
-            line_bot_api.reply_message(reply_token, TextSendMessage(text="プロフィール画像をアップロードしてください ※バストアップで人の顔とはっきりわかる画像をあげてください"))
+            line_bot_api.reply_message(reply_token, TextSendMessage(text="プロフィール画像をアップロードしてください📸\n※バストアップで人の顔とはっきりわかる画像をあげてください😊"))
         state["step"] += 1
 
     # アバターの性別を答えた後または画像アップロード後の処理
@@ -110,7 +110,7 @@ def call_chatgpt(user_id, reply_token):
                 "content": (
                     "以下の条件を使って、面白くて個性的な自己紹介文を作ってください。"
                     "1. 読み手に明確で分かりやすい印象を与えるように、言葉選びに注意してください。\n"
-                    "3. 漢字も含めて書くと100文字程度になるように作ってください。\n\n"
+                    "3. 漢字も含めて書くと150文字程度になるように作ってください。\n\n"
                     f"なまえ: {user_data.get('名前')}\n"
                     f"しゅみ: {user_data.get('趣味')}\n"
                     f"ひとこと: {user_data.get('一言')}\n"
