@@ -66,7 +66,7 @@ def ask_next_question(user_id, reply_token):
     elif state["step"] == len(questions):
         state["data"]["アバターを使うか"] = state["last_message"]
         if state["last_message"] == "はい":
-            line_bot_api.reply_message(reply_token, TextSendMessage(text="アバターの性別をどちらにするか教えてください❗ (男性👨/女性👩)"))
+            line_bot_api.reply_message(reply_token, TextSendMessage(text="アバターの性別をどちらにするか教えてください❗ (男性/女性)"))
         else:
             line_bot_api.reply_message(reply_token, TextSendMessage(text="プロフィール画像をアップロードしてください📸\n※バストアップで人の顔とはっきりわかる画像をあげてください😊"))
         state["step"] += 1
@@ -81,9 +81,13 @@ def ask_next_question(user_id, reply_token):
         # 処理中メッセージを送信
         line_bot_api.reply_message(reply_token, TextSendMessage(text="動画を作成中です。少々お待ちください。"))
 
-        # ChatGPTを呼び出す
-        call_chatgpt(user_id, reply_token)
-        reset_user_state(user_id)
+        try:
+            # ChatGPTを呼び出す
+            call_chatgpt(user_id, reply_token)
+            reset_user_state(user_id)
+        except Exception as e:
+            logger.error(f"Error calling ChatGPT or resetting user state: {str(e)}")
+            line_bot_api.reply_message(reply_token, TextSendMessage(text="エラーが発生しました。もう一度試してください。"))
 
 def call_chatgpt(user_id, reply_token):
     """
@@ -113,7 +117,7 @@ def call_chatgpt(user_id, reply_token):
                 "content": (
                     "以下の条件を使って、面白くて個性的な自己紹介文を作ってください。"
                     "1. 読み手に明確で分かりやすい印象を与えるように、言葉選びに注意してください。\n"
-                    "3. 漢字も含めて書くと150文字程度になるように作ってください。\n\n"
+                    "3. 漢字も含めて書くと130文字程度になるように作ってください。\n\n"
                     f"なまえ: {user_data.get('名前')}\n"
                     f"しゅみ: {user_data.get('趣味')}\n"
                     f"ひとこと: {user_data.get('一言')}\n"
