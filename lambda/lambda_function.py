@@ -78,6 +78,9 @@ def ask_next_question(user_id, reply_token):
         else:
             state["data"]["プロフィール画像"] = "アップロード済み"
 
+        # 処理中メッセージを送信
+        line_bot_api.reply_message(reply_token, TextSendMessage(text="動画を作成中です。少々お待ちください。"))
+
         # ChatGPTを呼び出す
         call_chatgpt(user_id, reply_token)
         reset_user_state(user_id)
@@ -95,7 +98,7 @@ def call_chatgpt(user_id, reply_token):
     #     ]
     # }
     request_data = {
-        "model": "gpt-3.5-turbo",
+        "model": "gpt-4o",
         "messages": [
             {
                 "role": "system",
